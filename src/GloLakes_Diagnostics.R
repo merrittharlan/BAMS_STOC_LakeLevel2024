@@ -78,7 +78,7 @@ LandsatSentinel2_df <- lake_levels_df(LandsatSentinel2file, output = "LandsatSen
 LandsatGREALM_df <- lake_levels_df(LandsatGREALMfile, output = "LandsatGREALM_data.csv")
 LandsatICESat2_df <- lake_levels_df(LandsatICESat2file, output = "LandsatICESat2_data.csv")
 
-HydroLAKES <- read_sf("data/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp") %>% 
+HydroLAKES <- read_sf("data/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.dbf") %>% 
   mutate(ID = Hylak_id) %>% st_drop_geometry()
 
 LandsatGREALM_data = read.csv("out/LandsatGREALM_data.csv")
