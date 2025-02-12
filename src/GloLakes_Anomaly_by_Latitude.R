@@ -20,7 +20,7 @@ anomaly_longitude_avg = read.csv(paste0(in_path, "anomaly_longitude_avg.csv"))
 
 #  Get Continents data
 # https://hub.arcgis.com/datasets/esri::world-continents/explore?location=0.005807%2C-36.562506%2C0.00 
-shp_robinson = read_sf('input/World_Continents.shp', stringsAsFactors = F) %>% st_transform(cr1)
+shp_robinson = read_sf('data/World_Continents.shp', stringsAsFactors = F) %>% st_transform(cr1)
 
 # Storage Anomaly Volume Plot
 size_sf = 0.2
@@ -90,5 +90,5 @@ lon_plot = ggplot() +
   geom_hline(yintercept = 0, lty = 3, linewidth = 0.2, color = "black")
 
 pdf(paste0("out/Lake_Anomaly_Volume_lat_lon_mean2.pdf"), width = 9, height = 6)
-grid.arrange(lon_plot, NULL, anomaly_volume_plot, lat_plot, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
+grid.arrange(lon_plot, grid::nullGrob(), anomaly_volume_plot, lat_plot, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
 dev.off()

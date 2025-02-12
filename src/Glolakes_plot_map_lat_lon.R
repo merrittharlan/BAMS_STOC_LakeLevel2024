@@ -8,11 +8,11 @@ library(gridExtra)
 cr1 = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 
 #  Load data
-anomaly_data = read.csv("out/lakes_anomaly_1991_2020BL.csv")
+anomaly_data = read.csv("out/Glolakes_anomaly_1991_2020BL.csv")
 anomaly_data_sp = st_as_sf(anomaly_data, coords = c("longitude", "latitude"), crs = 4326) %>% st_transform(cr1)
 
 #  Get Continents data
-shp_robinson = read_sf('input/World_Continents.shp', stringsAsFactors = F) %>% st_transform(cr1)
+shp_robinson = read_sf('data/World_Continents.shp', stringsAsFactors = F) %>% st_transform(cr1)
 
 volume_breaks = c(seq(-5, 5, 1))
 anomaly_volume_sp = anomaly_data_sp %>% filter(storage_anomaly_volume < 5) %>% filter(storage_anomaly_volume > -5)
@@ -169,9 +169,9 @@ lon_plot_sum = ggplot() +
   geom_hline(yintercept = 0, lty = 3, linewidth = 0.2, color = "black")
 
 pdf(paste0("out/Lake_Anomaly_Volume_mean_lat_lon.pdf"), width = 9, height = 6)
-grid.arrange(lon_plot, NULL, anomaly_volume_plot, lat_plot, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
+grid.arrange(lon_plot, grid::nullGrob(), anomaly_volume_plot, lat_plot, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
 dev.off()
 
 pdf(paste0("out/Lake_Anomaly_Volume_sum_lat_lon.pdf"), width = 9, height = 6)
-grid.arrange(lon_plot_sum, NULL, anomaly_volume_plot, lat_plot_sum, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
+grid.arrange(lon_plot_sum, grid::nullGrob(), anomaly_volume_plot, lat_plot_sum, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
 dev.off()

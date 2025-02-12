@@ -4,129 +4,103 @@ library(tidyr)
 library(zoo)
 library(data.table)
 
-MOGWAI_data = read.csv("data/MOGWAI/HydroLakes_polys_v10_10km2_global_results_dswe.csv")
+MOGWAI_data = read.csv("data/MOGWAI/HydroLakes_polys_v10_10km2_global_results_dswe.csv", check.names = FALSE)
+MOGWAI_df = MOGWAI_data %>%
+  select(c(-`Unnamed: 0`, -FileName)) %>%
+  pivot_longer(cols = -Dates,
+              names_to = "ID",
+              values_to = "DSWE_Area_km2") %>%
+  mutate(Year = as.numeric(format(as.Date(Dates),"%Y"))) %>%
+  filter(Year %in% c(2001:2024)) %>%
+  filter(!is.na(DSWE_Area_km2))
 
-
-lake_levels_nc <- function(nc_file, altimetry){
-  nc <- ncdf4::nc_open(nc_file)
-  print(nc)
-  lat <- ncvar_get(nc, "latitude")
-  lon <- ncvar_get(nc, "longitude")
-  lake_name <- ncvar_get(nc, "lake_name")
-  state_name <- ncvar_get(nc, "state_name")
-  country_name <- ncvar_get(nc, "country_name")
-  basin_id <- ncvar_get(nc, "basin_id")
-  basin_name <- ncvar_get(nc, "basin_name")
-  lake_storage <- ncvar_get(nc, "lake_storage")
-  
-  time <- nc$dim$time$vals
-  time <- as.Date('1984-01-01')+time
-  ID <- nc$dim$ID$vals
-  
-  ID_df <- data.frame(lat=lat,lon=lon,lake_name=lake_name,country_name=country_name,
-                      basin_id=basin_id,basin_name=basin_name,ID=ID,altimetry=altimetry)
-  
-  df <- data.frame(ID=rep(ID, each = length(time)),lake_storage=as.numeric(unlist(t(lake_storage))),
-                   time=rep(time, times = length(ID))) %>%
-    mutate(Year = format(as.Date(time),"%Y")) %>%
-    filter(Year %in% c(1991:2024))
-  
-  df_out <- df %>% left_join(ID_df)
-  
-  return(df_out)
-}
-
-HydroLAKES <- read_sf("data/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.dbf") %>% 
+HydroLAKES = read_sf("data/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.dbf") %>% 
   mutate(ID = Hylak_id) %>% st_drop_geometry()
 
 HydroBASINS_list = list.files("data/HydroBASINS", pattern = "*shp$", full.names = TRUE, recursive = TRUE)
 HydroBASINS_df = do.call(rbind, lapply(HydroBASINS_list, read_sf)) %>% st_make_valid() %>% select(HYBAS_ID)
 
-combined_df_ID = rbind(LandsatSentinel2_df, LandsatGREALM_df, LandsatICESat2_df) %>%
-  select(ID, lat, lon, lake_name, country_name, basin_id, basin_name) %>%
+combined_df_ID = MOGWAI_df %>%
+  select(ID) %>%
   distinct()
 
-three_year_gap = rbind(LandsatSentinel2_df, LandsatGREALM_df, LandsatICESat2_df) %>% 
-  select(ID, lake_storage, Year) %>%
+three_year_gap = MOGWAI_df %>% 
+  select(ID, DSWE_Area_km2, Year) %>%
   group_by(Year, ID) %>% 
-  summarize(obs_count = length(which(!is.na(lake_storage)))) %>% 
+  summarize(obs_count = length(which(!is.na(DSWE_Area_km2)))) %>% 
   mutate(obs_count_three = rollmean(obs_count, k = 4, fill = NA, align = "right")) %>%
   filter(obs_count_three == 0)
 
 three_year_IDs = unique(three_year_gap$ID)
 
-df_2024 = rbind(LandsatSentinel2_df, LandsatGREALM_df, LandsatICESat2_df) %>% 
-  select(ID, lake_storage, Year) %>%
+df_2024 = MOGWAI_df  %>% 
+  select(ID, DSWE_Area_km2, Year) %>%
   filter(Year == 2024) %>%
   group_by(ID) %>%
-  summarize(obs_count_2024 = length(which(!is.na(lake_storage)))) %>%
+  summarize(obs_count_2024 = length(which(!is.na(DSWE_Area_km2)))) %>%
   filter(obs_count_2024 > 2)
 
 df_2024_IDs = unique(df_2024$ID)
 
-df_20yrs = rbind(LandsatSentinel2_df, LandsatGREALM_df, LandsatICESat2_df) %>% 
-  select(ID, lake_storage, Year) %>%
+df_15yrs = MOGWAI_df %>% 
+  select(ID, DSWE_Area_km2, Year) %>%
   group_by(Year, ID) %>% 
-  summarize(obs_count = length(which(!is.na(lake_storage)))) %>% 
+  summarize(obs_count = length(which(!is.na(DSWE_Area_km2)))) %>% 
   filter(obs_count > 0) %>%
   group_by(ID) %>% summarize(year_count = length(Year),
                              start_year = min(Year),
                              end_year = max(Year)) %>%
-  filter(year_count >= 20)
+  filter(year_count >= 15)
 
-combined_df <- rbind(LandsatSentinel2_df, LandsatGREALM_df, LandsatICESat2_df) %>% 
-  select(ID, lake_storage, Year) %>%
+combined_df <- MOGWAI_df %>% 
+  select(ID, DSWE_Area_km2, Year) %>%
   filter(!ID %in% three_year_IDs) %>%
   filter(ID %in% df_2024_IDs) %>%
-  filter(ID %in% df_20yrs$ID) %>%
+  filter(ID %in% df_15yrs$ID) %>%
   group_by(Year, ID) %>% 
-  summarize(obs_count = length(which(!is.na(lake_storage)))) %>% 
+  summarize(obs_count = length(which(!is.na(DSWE_Area_km2)))) %>% 
   group_by(ID) %>% summarize(obs_bl_median = median(obs_count)) %>%
   filter(obs_bl_median >= 3) %>%
-  left_join(df_20yrs) %>%
+  left_join(df_15yrs) %>%
   left_join(df_2024)
 
-# total: 25,718 (100%)
-# three year: 18,516, 71.99%
-# 20 years: 25,630 99.66%
-# obs count 2024: 6,923, 26.92%
-# all filtering: 4,309, 16.75%
+# all filtering: 11,028, 100%
 
-combined_data <- rbind(LandsatSentinel2_df, LandsatGREALM_df, LandsatICESat2_df) %>% 
-  select(ID, lake_storage, Year, time) %>%
+combined_data <- MOGWAI_df %>% 
+  select(ID, DSWE_Area_km2, Year, Dates) %>%
   filter(ID %in% combined_df$ID) %>%
-  filter(!is.na(lake_storage))
+  filter(!is.na(DSWE_Area_km2))
 
 anomaly_calc <- function(rownum){
   print(paste0(rownum, " out of ", nrow(combined_df)))
-  storage_i = combined_data %>% filter(ID == as.numeric(combined_df[rownum, "ID"]))
-  bl = as.numeric(unlist(storage_i %>% filter(Year %in% c(1991:2020)) %>% select(lake_storage)))
-  current = as.numeric(unlist(storage_i %>% filter(Year == 2024) %>% select(lake_storage)))
-  storage_long_term_mean = mean(bl)
-  storage_long_term_mean_smooth = mean(smooth(bl))
-  storage_long_term_median = median(bl)
-  storage_long_term_sd = sd(bl)
-  storage_2024_mean = mean(current)
-  storage_2024_mean_smooth = mean(smooth(current))
-  storage_2024_median = median(current)
-  storage_2024_sd = sd(current)
-  storage_anomaly_volume = storage_2024_mean-storage_long_term_mean
-  storage_anomaly_percent = 100*storage_anomaly_volume/storage_long_term_mean
-  storage_anomaly_volume_smooth = storage_2024_mean_smooth-storage_long_term_mean_smooth
-  storage_anomaly_percent_smooth =  100*storage_anomaly_volume_smooth/storage_long_term_mean_smooth
+  area_i = combined_data %>% filter(ID == as.numeric(combined_df[rownum, "ID"]))
+  bl = as.numeric(unlist(area_i %>% filter(Year %in% c(2001:2020)) %>% select(DSWE_Area_km2)))
+  current = as.numeric(unlist(area_i %>% filter(Year == 2024) %>% select(DSWE_Area_km2)))
+  area_long_term_mean = mean(bl, na.rm = TRUE)
+  area_long_term_mean_smooth = mean(smooth(bl), na.rm = TRUE)
+  area_long_term_median = median(bl, na.rm = TRUE)
+  area_long_term_sd = sd(bl, na.rm = TRUE)
+  area_2024_mean = mean(current, na.rm = TRUE)
+  area_2024_mean_smooth = mean(smooth(current), na.rm = TRUE)
+  area_2024_median = median(current, na.rm = TRUE)
+  area_2024_sd = sd(current, na.rm = TRUE)
+  area_anomaly_volume = area_2024_mean-area_long_term_mean
+  area_anomaly_percent = 100*area_anomaly_volume/area_long_term_mean
+  area_anomaly_volume_smooth = area_2024_mean_smooth-area_long_term_mean_smooth
+  area_anomaly_percent_smooth =  100*area_anomaly_volume_smooth/area_long_term_mean_smooth
   df = data.frame(ID = as.numeric(combined_df[rownum, "ID"]), 
-                  storage_long_term_mean = storage_long_term_mean, 
-                  storage_long_term_mean_smooth = storage_long_term_mean_smooth,
-                  storage_long_term_median = storage_long_term_median,
-                  storage_long_term_sd = storage_long_term_sd,
-                  storage_2024_mean = storage_2024_mean,
-                  storage_2024_mean_smooth = storage_2024_mean_smooth,
-                  storage_2024_median = storage_2024_median,
-                  storage_2024_sd = storage_2024_sd,
-                  storage_anomaly_volume = storage_anomaly_volume,
-                  storage_anomaly_volume_smooth = storage_anomaly_volume_smooth,
-                  storage_anomaly_percent = storage_anomaly_percent,
-                  storage_anomaly_percent_smooth = storage_anomaly_percent_smooth)
+                  area_long_term_mean = area_long_term_mean, 
+                  area_long_term_mean_smooth = area_long_term_mean_smooth,
+                  area_long_term_median = area_long_term_median,
+                  area_long_term_sd = area_long_term_sd,
+                  area_2024_mean = area_2024_mean,
+                  area_2024_mean_smooth = area_2024_mean_smooth,
+                  area_2024_median = area_2024_median,
+                  area_2024_sd = area_2024_sd,
+                  area_anomaly_volume = area_anomaly_volume,
+                  area_anomaly_volume_smooth = area_anomaly_volume_smooth,
+                  area_anomaly_percent = area_anomaly_percent,
+                  area_anomaly_percent_smooth = area_anomaly_percent_smooth)
   return(df)
 }
 
@@ -136,12 +110,19 @@ end.time = Sys.time()
 print(end.time - start.time)
 
 df_basins = combined_df %>% 
+  mutate(ID = as.numeric(ID)) %>%
   left_join(combined_anomaly) %>%
-  left_join(combined_df_ID) %>% 
-  mutate(latitude = lat) %>%
-  mutate(longitude = lon) %>%
-  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+  left_join(combined_df_ID %>%
+              mutate(ID = as.numeric(ID))) %>% 
+  left_join(HydroLAKES %>% 
+              mutate(ID = as.numeric(Hylak_id))) %>%
+  mutate(latitude = Pour_lat) %>%
+  mutate(longitude = Pour_long) %>%
+  drop_na(c(latitude, longitude)) %>%
+  st_as_sf(coords = c("Pour_long", "Pour_lat"), crs = 4326) %>%
   st_join(HydroBASINS_df, join = st_intersects)
 
-df_out = df_basins %>%
-  left_join(HydroLAKES)
+df_out = df_basins
+
+write.csv(df_out %>% st_drop_geometry(), "out/MOGWAI_anomaly_2001_2020BL.csv", row.names = FALSE)
+write.csv(combined_data, "data/MOGWAI/MOGWAI_timeseries_2001_2020BL.csv", row.names = FALSE)

@@ -10,17 +10,17 @@ library(gridExtra)
 cr1 = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 
 #  Load data
-anomaly_data = read.csv("out/lakes_anomaly_1991_2020BL.csv")
+anomaly_data = read.csv("out/Glolakes_anomaly_1991_2020BL.csv")
 anomaly_data_sp = st_as_sf(anomaly_data, coords = c("longitude", "latitude"), crs = 4326) %>% st_transform(cr1)
 anomaly_data_sp = anomaly_data_sp %>% filter(storage_anomaly_percent < 100)
 
 anomaly_data_filtered = anomaly_data %>% filter(storage_anomaly_percent < 100) %>% select(storage_anomaly_percent, ID, latitude, longitude)
-write.csv(anomaly_data_filtered, "out/DATA_SotC_LakeWaterStorage_plate_v2.csv", row.names = FALSE)
-write.csv(anomaly_data, "out/lake_storage_percent_plate_all.csv", row.names = FALSE)
+write.csv(anomaly_data_filtered, "out/DATA_SotC_GloLakeWaterStorage_plate_v2.csv", row.names = FALSE)
+write.csv(anomaly_data, "out/GloLakes_storage_percent_plate_all.csv", row.names = FALSE)
 
 
 #  Get Continents data
-shp_robinson = read_sf('input/World_Continents.shp', stringsAsFactors = F) %>% st_transform(cr1)
+shp_robinson = read_sf('data/World_Continents.shp', stringsAsFactors = F) %>% st_transform(cr1)
 
 size_sf = 0.1
 percent_breaks = c(seq(-100, 100, 20))
@@ -44,7 +44,7 @@ anomaly_percent_plot = ggplot() +
     barwidth = 25
   ),
   color = "none") +
-  ggtitle("Lake Storage") +
+  ggtitle("GloLakes Lake Storage") +
   theme_light() +
   theme(axis.title = element_blank(),
         axis.text.x = element_blank(), 
@@ -52,7 +52,7 @@ anomaly_percent_plot = ggplot() +
         panel.border = element_rect(fill = NA, color=NA),
         legend.position = "bottom")
 
-pdf(paste0("out/Lake_Storage_Plate.pdf"), width = 6, height = 4)
+pdf(paste0("out/GloLakes_Storage_Plate.pdf"), width = 6, height = 4)
 plot(anomaly_percent_plot)
 dev.off()
 

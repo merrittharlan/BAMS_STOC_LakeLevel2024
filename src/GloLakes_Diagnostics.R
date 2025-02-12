@@ -74,14 +74,14 @@ LandsatSentinel2file <- "data/Global_Lake_Absolute_Storage_LandsatPlusSentinel2 
 LandsatGREALMfile <- "data/Global_Lake_Absolute_Storage_LandsatPlusGREALM (1984-present).nc"
 LandsatICESat2file <- "data/Global_Lake_Absolute_Storage_LandsatPlusICESat2 (1984-present).nc"
 
-LandsatSentinel2_df <- lake_levels_df(LandsatSentinel2file, output = "LandsatSentinel2_data.csv")
-LandsatGREALM_df <- lake_levels_df(LandsatGREALMfile, output = "LandsatGREALM_data.csv")
-LandsatICESat2_df <- lake_levels_df(LandsatICESat2file, output = "LandsatICESat2_data.csv")
+LandsatSentinel2_df <- lake_levels_df(LandsatSentinel2file, output = "GloLakes_LandsatSentinel2_data.csv")
+LandsatGREALM_df <- lake_levels_df(LandsatGREALMfile, output = "GloLakes_LandsatGREALM_data.csv")
+LandsatICESat2_df <- lake_levels_df(LandsatICESat2file, output = "GloLakes_LandsatICESat2_data.csv")
 
 HydroLAKES <- read_sf("data/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.dbf") %>% 
   mutate(ID = Hylak_id) %>% st_drop_geometry()
 
-LandsatGREALM_data = read.csv("out/LandsatGREALM_data.csv")
+LandsatGREALM_data = read.csv("out/GloLakes_LandsatGREALM_data.csv")
 
 LandsatGREALM_cor = cor(LandsatGREALM_df %>% left_join(HydroLAKES) %>% mutate("Year Count" = year_count,
                                                             "Start Year" = start_year,
@@ -95,7 +95,7 @@ LandsatGREALM_cor = cor(LandsatGREALM_df %>% left_join(HydroLAKES) %>% mutate("Y
            "Lake Area", "Elevation", "Storage Anomaly (%)")) %>%
   mutate_if(is.character,as.numeric))
 
-LandsatSentinel2_data = read.csv("out/LandsatSentinel2_data.csv")
+LandsatSentinel2_data = read.csv("out/GloLakes_LandsatSentinel2_data.csv")
 
 LandsatSentinel2_cor = cor(LandsatSentinel2_df %>% left_join(HydroLAKES) %>% mutate("Year Count" = year_count,
                                                                               "Start Year" = start_year,
@@ -109,7 +109,7 @@ LandsatSentinel2_cor = cor(LandsatSentinel2_df %>% left_join(HydroLAKES) %>% mut
                                    "Lake Area", "Elevation", "Storage Anomaly (%)")) %>%
                           mutate_if(is.character,as.numeric), use = "complete.obs")
 
-LandsatICESat2_data = read.csv("out/LandsatICESat2_data.csv")
+LandsatICESat2_data = read.csv("out/GloLakes_LandsatICESat2_data.csv")
 
 LandsatICESat2_cor = cor(LandsatICESat2_df %>% left_join(HydroLAKES) %>% mutate("Year Count" = year_count,
                                                                                     "Start Year" = start_year,
@@ -191,8 +191,26 @@ GI2 = LandsatGREALM_df %>% inner_join(LandsatICESat2_df, by = "ID") %>%
 S12 = LandsatSentinel2_df %>% inner_join(LandsatICESat2_df, by = "ID") %>% 
   select(storage_anomaly_percent.x, year_count.x, storage_anomaly_percent.y, year_count.y)
 
-plot(GS2$storage_anomaly_percent.x, GS2$storage_anomaly_percent.y, xlab = "Landsat GREALM", ylab = "Landsat Sentinel2")
-plot(GI2$storage_anomaly_percent.x, GI2$storage_anomaly_percent.y, xlab = "Landsat GREALM", ylab = "Landsat ICESat2")
-plot(S12$storage_anomaly_percent.x, S12$storage_anomaly_percent.y, xlab = "Landsat Sentinel-2", ylab = "Landsat ICESat2")
+GREALM_S2 = ggplot(data.frame(GS2), aes(x = storage_anomaly_percent.x, y = storage_anomaly_percent.y)) + 
+  geom_point() + theme_minimal() +
+  xlab("Landsat GREALM") + ylab("Landsat Sentinel2") +
+  geom_abline(slope = 1, intercept = 0, color = "grey", lty = 2) +
+  tune::coord_obs_pred()
 
+GREALM_ICESAT2 = ggplot(data.frame(GI2), aes(x = storage_anomaly_percent.x, y = storage_anomaly_percent.y)) + 
+  geom_point() + theme_minimal() +
+  xlab("Landsat GREALM") + ylab("Landsat ICESat2") +
+  geom_abline(slope = 1, intercept = 0, color = "grey", lty = 2) +
+  tune::coord_obs_pred(xlim = c(-100, 100), ylim = c(-100, 100))
 
+S2_ICESAT2 = ggplot(data.frame(S12), aes(x = storage_anomaly_percent.x, y = storage_anomaly_percent.y)) + 
+  geom_point() + theme_minimal() +
+  xlab("Landsat Sentinel-2") + ylab("Landsat ICESat2") +
+  geom_abline(slope = 1, intercept = 0, color = "grey", lty = 2) +
+  tune::coord_obs_pred(xlim = c(-100, 500), ylim = c(-100, 500))
+
+pdf("out/GloLakes_same_lakes.pdf")
+print(GREALM_S2)
+print(GREALM_ICESAT2)
+print(S2_ICESAT2)
+dev.off()
