@@ -63,14 +63,31 @@ names(data.exp)<-c("lat.round","Year")
 data.exp[,lake_storage.propmean.predict:=predict.gam(newdata=data.exp,fit.gam)]
 head(data.exp)
 
-ggplot()+
-  geom_tile(data=data.exp,aes(x=Year,y=lat.round,fill=lake_storage.propmean.predict))+
-  geom_contour(data=data.exp,aes(x=Year,y=lat.round,z=lake_storage.propmean.predict),colour="black",bins=12)+
-  scale_fill_viridis_c(option = "turbo",limits=c(0.83,1.17),direction = -1)+
+volume_breaks = c(seq(50, 150, 10))
+
+hovmuller_plot = ggplot()+
+  geom_tile(data=data.exp,aes(x=Year,y=lat.round,fill=lake_storage.propmean.predict*100))+
+  geom_contour(data=data.exp,aes(x=Year,y=lat.round,z=lake_storage.propmean.predict*100),colour="black",bins=12)+
+  scale_fill_fermenter(breaks = volume_breaks, palette = "BrBG", name = "Anomaly from 1991-2020 (%)", direction = 1)+
   theme_bw()+
   labs(y="Latitude",
        x="Year",
        fill="Lake storage
 (proportion of mean)")+
   scale_x_continuous(expand=c(0,0))+
-  scale_y_continuous(expand=c(0,0))
+  scale_y_continuous(expand=c(0,0)) +
+  guides(fill = guide_colorbar(
+    title.position = "bottom",
+    frame.linewidth = 0.55,
+    frame.colour = "black",
+    ticks.colour = "black",
+    ticks.linewidth = 0.3,
+    barwidth = 10
+  ),
+  color = "none") +
+  theme_light() +
+  theme(legend.position = "bottom")
+
+pdf(file = "out/GloLakes_Hovmuller.pdf", width = 6, height = 4)
+plot(hovmuller_plot)
+dev.off()

@@ -126,7 +126,7 @@ LandsatICESat2_cor = cor(LandsatICESat2_df %>% left_join(HydroLAKES) %>% mutate(
 #generate some basic plots
 plot_fun <- function(df = LandsatGREALM_df, data_df = LandsatGREALM_data, 
                      cor_df = LandsatGREALM_cor,
-                     title = "Landsat_GREALM"){
+                     title = "GloLakes_Landsat_GREALM"){
   
   hist_plot = ggplot(df %>% mutate(year_bins = cut(year_count, breaks = c(10,15,20,25,30,35,40))),
                      aes(x = storage_anomaly_percent, colour = as.factor(year_bins))) +
@@ -168,15 +168,15 @@ plot_fun <- function(df = LandsatGREALM_df, data_df = LandsatGREALM_data,
 
 plot_fun(df = LandsatGREALM_df, data_df = LandsatGREALM_data, 
          cor_df = LandsatGREALM_cor,
-         title = "Landsat_GREALM")
+         title = "GloLakes_Landsat_GREALM")
 
 plot_fun(df = LandsatSentinel2_df, data_df = LandsatSentinel2_data, 
          cor_df = LandsatSentinel2_cor,
-         title = "Landsat_Sentinel2")
+         title = "GloLakes_Landsat_Sentinel2")
 
 plot_fun(df = LandsatICESat2_df, data_df = LandsatICESat2_data, 
          cor_df = LandsatICESat2_cor,
-         title = "Landsat_ICESat2")
+         title = "GloLakes_Landsat_ICESat2")
 
 #Compare same ID waterbodies
 GS2 = LandsatGREALM_df %>% inner_join(LandsatSentinel2_df, by = "ID") %>% 

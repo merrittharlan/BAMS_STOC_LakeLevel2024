@@ -11,12 +11,12 @@ out_path = "out/"
 cr1 = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 
 #  Load data
-anomaly_volume = read.csv(paste0(in_path, "anomaly_volume_filtered.csv"))
+anomaly_volume = read.csv(paste0(in_path, "GloLakes_anomaly_volume_filtered.csv"))
 anomaly_volume_sp = st_as_sf(anomaly_volume, coords = c("longitude", "latitude"), crs = 4326) %>% st_transform(cr1)
-anomaly_latitude = read.csv(paste0(in_path, "anomaly_latitude.csv"))
-anomaly_latitude_avg = read.csv(paste0(in_path, "anomaly_latitude_avg.csv"))
-anomaly_longitude = read.csv(paste0(in_path, "anomaly_longitude.csv"))
-anomaly_longitude_avg = read.csv(paste0(in_path, "anomaly_longitude_avg.csv"))
+anomaly_latitude = read.csv(paste0(in_path, "GloLakes_anomaly_latitude.csv"))
+anomaly_latitude_avg = read.csv(paste0(in_path, "GloLakes_anomaly_latitude_avg.csv"))
+anomaly_longitude = read.csv(paste0(in_path, "GloLakes_anomaly_longitude.csv"))
+anomaly_longitude_avg = read.csv(paste0(in_path, "GloLakes_anomaly_longitude_avg.csv"))
 
 #  Get Continents data
 # https://hub.arcgis.com/datasets/esri::world-continents/explore?location=0.005807%2C-36.562506%2C0.00 
@@ -89,6 +89,6 @@ lon_plot = ggplot() +
   scale_fill_manual(values = c("Positive" = "#80CDC1", "Negative" = "#DFC27D")) +
   geom_hline(yintercept = 0, lty = 3, linewidth = 0.2, color = "black")
 
-pdf(paste0("out/Lake_Anomaly_Volume_lat_lon_mean2.pdf"), width = 9, height = 6)
+pdf(paste0("out/GloLakes_Lake_Anomaly_Volume_lat_lon_mean2.pdf"), width = 9, height = 6)
 grid.arrange(lon_plot, grid::nullGrob(), anomaly_volume_plot, lat_plot, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
 dev.off()

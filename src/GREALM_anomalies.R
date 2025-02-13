@@ -4,10 +4,17 @@ library(tidyr)
 library(zoo)
 library(data.table)
 
-GREALM_30_files = list.files("input/lake.30.tar/lake.30", pattern = ".txt", full.names = TRUE)
-GREALM_10_files = list.files("input/lake.10.tar/lake.10", pattern = ".txt", full.names = TRUE)
-GREALM_file = GREALM_10_files[1]
+GREALM_10day_url <- "https://ipad.fas.usda.gov/lakes/images/lakes.TPJOJ.2.smooth.txt.tar.gz"
+GREALM_destfile <- "lakes.TPJOJ.2.smooth.txt.tar.gz"
 
+# Download the file
+download.file(url, destfile, mode = "wb")
+
+# Extract the contents of the tar.gz file
+untar(destfile, exdir = "data/GREALM")
+
+# List the extracted files
+list.files("extracted_data")
 read_GREALM_data <- function(GREALM_file, skip_count = 50){
   data_string = readLines(GREALM_file, n = 1)[1]
   GREALM_version = strsplit(data_string, " ")[[1]][1]

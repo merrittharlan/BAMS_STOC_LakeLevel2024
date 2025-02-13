@@ -51,9 +51,9 @@ anomaly_volume_df = anomaly_data %>% filter(storage_anomaly_volume < 5) %>% filt
   mutate(lat = as.factor(round(latitude, 0))) %>%
   mutate(lon = as.factor(round(longitude, 0)))
 
-write.csv(anomaly_data %>% filter(storage_anomaly_volume < 5) %>% filter(storage_anomaly_volume > -5), "out/anomaly_volume_filtered.csv", 
+write.csv(anomaly_data %>% filter(storage_anomaly_volume < 5) %>% filter(storage_anomaly_volume > -5), "out/GloLakes_anomaly_volume_filtered.csv", 
           row.names = FALSE)
-write.csv(anomaly_data, "out/anomaly_volume_all.csv", row.names = FALSE)
+write.csv(anomaly_data, "out/GloLakes_anomaly_volume_all.csv", row.names = FALSE)
 
 anomaly_latitude_blank = data.frame(lat = c(as.factor(c(-45:73)), as.factor(c(-45:73))), 
                                     sign = rep(c("Negative", "Positive"), each = 119), latitude = c(c(-45:73), c(-45:73))) %>%
@@ -68,7 +68,7 @@ anomaly_latitude =  anomaly_volume_df %>%
   mutate(latitude = as.numeric(as.character(lat))) %>%
   full_join(anomaly_latitude_blank)
 
-write.csv(anomaly_latitude, "out/anomaly_latitude.csv", row.names = FALSE)
+write.csv(anomaly_latitude, "out/GloLakes_anomaly_latitude.csv", row.names = FALSE)
 
 anomaly_latitude_avg = anomaly_latitude %>%
   group_by(lat) %>%
@@ -76,7 +76,7 @@ anomaly_latitude_avg = anomaly_latitude %>%
             sum_anomaly = sum(sum_anomaly)) %>%
   mutate(latitude = as.numeric(as.character(lat)))
 
-write.csv(anomaly_latitude_avg, "out/anomaly_latitude_avg.csv", row.names = FALSE)
+write.csv(anomaly_latitude_avg, "out/GloLakes_anomaly_latitude_avg.csv", row.names = FALSE)
 
 anomaly_longitude_blank = data.frame(lon = c(as.factor(c(-180:180)), as.factor(c(-180:180))), 
                                     sign = rep(c("Negative", "Positive"), each = 361), longitude = c(c(-180:180), c(-180:180))) %>%
@@ -91,7 +91,7 @@ anomaly_longitude =  anomaly_volume_df %>%
   mutate(longitude = as.numeric(as.character(lon))) %>%
   full_join(anomaly_longitude_blank)
 
-write.csv(anomaly_longitude, "out/anomaly_longitude.csv", row.names = FALSE)
+write.csv(anomaly_longitude, "out/GloLakes_anomaly_longitude.csv", row.names = FALSE)
 
 anomaly_longitude_avg = anomaly_longitude %>%
   group_by(lon) %>%
@@ -99,7 +99,7 @@ anomaly_longitude_avg = anomaly_longitude %>%
             sum_anomaly = sum(sum_anomaly)) %>%
   mutate(longitude = as.numeric(as.character(lon)))
 
-write.csv(anomaly_longitude_avg, "out/anomaly_longitude_avg.csv", row.names = FALSE)
+write.csv(anomaly_longitude_avg, "out/GloLakes_anomaly_longitude_avg.csv", row.names = FALSE)
 
 lat_plot = ggplot() +
   geom_line(data = anomaly_volume_df, 
@@ -168,10 +168,10 @@ lon_plot_sum = ggplot() +
   scale_color_manual(values = c("Positive" = "#01665E", "Negative" = "#8C510A")) +
   geom_hline(yintercept = 0, lty = 3, linewidth = 0.2, color = "black")
 
-pdf(paste0("out/Lake_Anomaly_Volume_mean_lat_lon.pdf"), width = 9, height = 6)
+pdf(paste0("out/GloLakes_Lake_Anomaly_Volume_mean_lat_lon.pdf"), width = 9, height = 6)
 grid.arrange(lon_plot, grid::nullGrob(), anomaly_volume_plot, lat_plot, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
 dev.off()
 
-pdf(paste0("out/Lake_Anomaly_Volume_sum_lat_lon.pdf"), width = 9, height = 6)
+pdf(paste0("out/GloLakes_Lake_Anomaly_Volume_sum_lat_lon.pdf"), width = 9, height = 6)
 grid.arrange(lon_plot_sum, grid::nullGrob(), anomaly_volume_plot, lat_plot_sum, nrow = 2, ncol =2, widths = c(3, 1), heights = c(1, 3))
 dev.off()
