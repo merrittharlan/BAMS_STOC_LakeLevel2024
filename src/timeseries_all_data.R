@@ -4,7 +4,7 @@ library(ggplot2)
 library(corrplot)
 library(sf)
 
-GREALM_timeseries = read.csv("out/GREALM_timeseries_1992_2020BL.csv")
+GREALM_timeseries = read.csv("out/GREALM_timeseries_1993_2020BL.csv")
 
 GREALM_baseline_avg <- GREALM_timeseries %>%
   filter(Year >= 1992, Year <= 2020) %>%

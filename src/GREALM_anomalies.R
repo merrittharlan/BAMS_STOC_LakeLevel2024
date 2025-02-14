@@ -116,7 +116,7 @@ combined_data <- GREALM_df %>%
 anomaly_calc <- function(rownum){
   print(paste0(rownum, " out of ", nrow(combined_df)))
   level_i = combined_data %>% filter(site_no == as.character(combined_df[rownum, "site_no"]))
-  bl = as.numeric(unlist(level_i %>% filter(Year %in% c(1992:2020)) %>% select(Smoothed_target_height_EGM2008)))
+  bl = as.numeric(unlist(level_i %>% filter(Year %in% c(1993:2020)) %>% select(Smoothed_target_height_EGM2008)))
   current = as.numeric(unlist(level_i %>% filter(Year == 2024) %>% select(Smoothed_target_height_EGM2008)))
   level_long_term_mean = mean(bl, na.rm = TRUE)
   level_long_term_mean_smooth = mean(smooth(bl), na.rm = TRUE)
@@ -165,5 +165,5 @@ GREALM_HydroLAKES = read_sf("data/GREALM_HydroLAKES_merged.gpkg") %>%
 
 df_out = GREALM_HydroLAKES
 
-write.csv(df_out %>% st_drop_geometry(), "out/GREALM_anomaly_1992_2020BL.csv", row.names = FALSE)
-write.csv(combined_data, "out/GREALM_timeseries_1992_2020BL.csv", row.names = FALSE)
+write.csv(df_out %>% st_drop_geometry(), "out/GREALM_anomaly_1993_2020BL.csv", row.names = FALSE)
+write.csv(combined_data, "out/GREALM_timeseries_1993_2020BL.csv", row.names = FALSE)

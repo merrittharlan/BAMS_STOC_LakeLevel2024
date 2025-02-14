@@ -4,13 +4,13 @@ library(sf)
 library(RColorBrewer)
 library(gridExtra)
 
-#Updated to baseline 1991
+#Updated to baseline 1993
 
 #  Define Robinson projection
 cr1 = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 
 #  Load data
-anomaly_data = read.csv("out/GREALM_anomaly_1992_2020BL.csv")
+anomaly_data = read.csv("out/GREALM_anomaly_1993_2020BL.csv")
 anomaly_data_sp = st_as_sf(anomaly_data, coords = c("longitude", "latitude"), crs = 4326) %>% st_transform(cr1)
 anomaly_data_sp = anomaly_data_sp %>% filter(level_anomaly_percent < 100)
 
@@ -32,8 +32,8 @@ anomaly_percent_plot = ggplot() +
           mapping=aes(fill = level_anomaly_percent, 
                       color = level_anomaly_percent),
           size=size_sf, pch=21)+
-  scale_color_fermenter(breaks = percent_breaks, palette = "BrBG", name = "Anomaly from 1992-2020 (%)", direction = 1) +
-  scale_fill_fermenter(breaks = percent_breaks, palette = "BrBG", name = "Anomaly from 1992-2020 (%)", direction = 1) +
+  scale_color_fermenter(breaks = percent_breaks, palette = "BrBG", name = "Anomaly from 1993-2020 (%)", direction = 1) +
+  scale_fill_fermenter(breaks = percent_breaks, palette = "BrBG", name = "Anomaly from 1993-2020 (%)", direction = 1) +
   theme_light() +
   guides(fill = guide_colorbar(
     title.position = "bottom",
@@ -60,8 +60,8 @@ anomaly_volume_plot = ggplot() +
           mapping=aes(fill = level_anomaly_volume, 
                       color = level_anomaly_volume),
           size=size_sf, pch=21)+
-  scale_color_fermenter(breaks = volume_breaks, palette = "BrBG", name = "Anomaly from 1992-2020 (m)", direction = 1) +
-  scale_fill_fermenter(breaks = volume_breaks, palette = "BrBG", name = "Anomaly from 1992-2020 (m)", direction = 1) +
+  scale_color_fermenter(breaks = volume_breaks, palette = "BrBG", name = "Anomaly from 1993-2020 (m)", direction = 1) +
+  scale_fill_fermenter(breaks = volume_breaks, palette = "BrBG", name = "Anomaly from 1993-2020 (m)", direction = 1) +
   theme_light() +
   guides(fill = guide_colorbar(
     title.position = "bottom",

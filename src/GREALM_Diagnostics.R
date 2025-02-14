@@ -4,7 +4,7 @@ library(ggplot2)
 library(corrplot)
 library(sf)
 
-GREALM_timeseries = read.csv("out/GREALM_timeseries_1992_2020BL.csv")
+GREALM_timeseries = read.csv("out/GREALM_timeseries_1993_2020BL.csv")
 GREALM_year_count = GREALM_timeseries %>%
   group_by(Year, site_no) %>% summarize(obs_count = length(which(!is.na(Smoothed_target_height_EGM2008)))) %>% 
   filter(obs_count > 0) %>% group_by(site_no) %>% summarize(year_count = length(Year))
@@ -27,7 +27,7 @@ plot_fun <- function(data_df = GREALM_timeseries,
   
   # Step 1: Calculate baseline average for each lake (2000-2020)
   baseline_avg <- data_df %>%
-    filter(Year >= 1992, Year <= 2020) %>%
+    filter(Year >= 1993, Year <= 2020) %>%
     group_by(site_no) %>%
     summarize(baseline_mean = mean(Smoothed_target_height_EGM2008, na.rm = TRUE))
   
@@ -46,7 +46,7 @@ plot_fun <- function(data_df = GREALM_timeseries,
     geom_line() +
     theme_bw() +
     xlab("Year") +
-    ylab("Percentage Anomaly from 1992-2020 Baseline (%)") +
+    ylab("Percentage Anomaly from 1993-2020 Baseline (%)") +
     theme(legend.position = "none") +
     scale_color_grey(start = 0, end = 0.7)
   
@@ -71,7 +71,7 @@ plot_fun <- function(data_df = GREALM_timeseries,
   
   # Step 1: Calculate baseline mean (2000-2020) for each lake (ID)
   baseline_avg <- data_df %>%
-    filter(Year >= 1992, Year <= 2020) %>%
+    filter(Year >= 1993, Year <= 2020) %>%
     group_by(site_no) %>%
     summarize(baseline_mean = mean(Smoothed_target_height_EGM2008, na.rm = TRUE))
   
@@ -107,7 +107,7 @@ plot_fun <- function(data_df = GREALM_timeseries,
     theme_bw() +
     xlab("Year") +
     ylab("Mean Level Anomaly (m)") +
-    ggtitle("Mean Lake Level Anomaly Over Time (Relative to 1992-2020 Baseline)") +
+    ggtitle("Mean Lake Level Anomaly Over Time (Relative to 1993-2020 Baseline)") +
     scale_color_manual(values = c("median" = "grey50", "mean" = "grey10"))
   
   pdf(paste0("out/", title, ".pdf"))
@@ -128,7 +128,7 @@ GloLakes_LandsatGREALM_data = read.csv("out/GloLakes_LandsatGREALM_data.csv")
 GloLakes_LandsatICESat2_data = read.csv("out/GloLakes_LandsatICESat2_data.csv")
 GloLakes_LandsatSentinel2_data = read.csv("out/GloLakes_LandsatSentinel2_data.csv")
 
-GREALM_anomaly = read.csv("out/GREALM_anomaly_1992_2020BL.csv")
+GREALM_anomaly = read.csv("out/GREALM_anomaly_1993_2020BL.csv")
 GREALM_yearly = GREALM_timeseries %>%
   mutate(year = Year) %>%
   left_join(GREALM_anomaly) %>%
