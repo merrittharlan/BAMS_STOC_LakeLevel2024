@@ -25,7 +25,10 @@ read_GREALM_data <- function(GREALM_file, skip_count = 12){
   latlon_chars = strsplit(latlon_string, "[ ]")[[1]]
   latlon_cleaned = latlon_chars[latlon_chars != ""]
   lat = as.numeric(latlon_cleaned[1])
-  lon = as.numeric(latlon_cleaned[2]) - 360
+  lon = as.numeric(latlon_cleaned[2])
+  if(lon >= 180){
+    lon = lon - 360
+  }
   
   GREALM_cols = c(
     "Calendar_year/month/day",
@@ -81,7 +84,7 @@ df_2024 = GREALM_df  %>%
 
 df_2024_IDs = unique(df_2024$site_no)
 
-df_15yrs = GREALM_df %>% 
+df_20yrs = GREALM_df %>% 
   mutate(Year = year(date)) %>%
   select(site_no, Smoothed_target_height_EGM2008, Year) %>%
   group_by(Year, site_no) %>% 
@@ -90,22 +93,20 @@ df_15yrs = GREALM_df %>%
   group_by(site_no) %>% summarize(year_count = length(Year),
                              start_year = min(Year),
                              end_year = max(Year)) %>%
-  filter(year_count >= 15)
+  filter(year_count >= 20)
 
 combined_df <- GREALM_df %>% 
   mutate(Year = year(date)) %>%
   select(site_no, Smoothed_target_height_EGM2008, Year) %>%
   filter(!site_no %in% three_year_IDs) %>%
   filter(site_no %in% df_2024_IDs) %>%
-  filter(site_no %in% df_15yrs$site_no) %>%
+  filter(site_no %in% df_20yrs$site_no) %>%
   group_by(Year, site_no) %>% 
   summarize(obs_count = length(which(!is.na(Smoothed_target_height_EGM2008)))) %>% 
   group_by(site_no) %>% summarize(obs_bl_median = median(obs_count)) %>%
   filter(obs_bl_median >= 3) %>%
-  left_join(df_15yrs) %>%
+  left_join(df_20yrs) %>%
   left_join(df_2024)
-
-# all filtering: 11,028, 100%
 
 combined_data <- GREALM_df %>% 
   mutate(Year = year(date)) %>%
@@ -126,10 +127,8 @@ anomaly_calc <- function(rownum){
   level_2024_mean_smooth = mean(smooth(current), na.rm = TRUE)
   level_2024_median = median(current, na.rm = TRUE)
   level_2024_sd = sd(current, na.rm = TRUE)
-  level_anomaly_volume = level_2024_mean-level_long_term_mean
-  level_anomaly_percent = 100*level_anomaly_volume/level_long_term_mean
-  level_anomaly_volume_smooth = level_2024_mean_smooth-level_long_term_mean_smooth
-  level_anomaly_percent_smooth =  100*level_anomaly_volume_smooth/level_long_term_mean_smooth
+  level_anomaly = level_2024_mean-level_long_term_mean
+  level_anomaly_smooth = level_2024_mean_smooth-level_long_term_mean_smooth
   df = data.frame(site_no = as.character(combined_df[rownum, "site_no"]), 
                   level_long_term_mean = level_long_term_mean, 
                   level_long_term_mean_smooth = level_long_term_mean_smooth,
@@ -139,10 +138,8 @@ anomaly_calc <- function(rownum){
                   level_2024_mean_smooth = level_2024_mean_smooth,
                   level_2024_median = level_2024_median,
                   level_2024_sd = level_2024_sd,
-                  level_anomaly_volume = level_anomaly_volume,
-                  level_anomaly_volume_smooth = level_anomaly_volume_smooth,
-                  level_anomaly_percent = level_anomaly_percent,
-                  level_anomaly_percent_smooth = level_anomaly_percent_smooth)
+                  level_anomaly = level_anomaly,
+                  level_anomaly_smooth = level_anomaly_smooth)
   return(df)
 }
 
@@ -159,11 +156,77 @@ GREALM_sp = combined_anomaly %>%
 
 write_sf(GREALM_sp, "data/GREALM_sp.gpkg")
 
-GREALM_HydroLAKES = read_sf("data/GREALM_HydroLAKES_merged.gpkg") %>%
-  mutate(ID = Hylak_id) %>%
+HydroLAKES_fixed = read_sf("data/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp") %>%
+  st_make_valid()
+
+GREALM_buffered = GREALM_sp %>% st_buffer(dist = 1000)
+
+ptm = proc.time()
+GREALM_HydroLAKES = GREALM_buffered %>% st_intersects(HydroLAKES_fixed)
+proc.time() - ptm
+
+HydroLAKES_intersecting = HydroLAKES_fixed[unique(unlist(GREALM_HydroLAKES)), ]
+
+GREALM_HydroLAKES_merged = GREALM_buffered %>% 
+  st_join(HydroLAKES_intersecting, join = st_intersects)
+
+GREALM_duplicate = GREALM_HydroLAKES_merged %>% 
+  st_drop_geometry() %>%
+  group_by(site_no) %>%
+  mutate(count = n()) %>%
+  filter(count > 1) %>%
+  select(site_no, Hylak_id, Lake_name) %>%
+  left_join(GREALM_data %>% select(site_no, site_name) %>% distinct()) %>%
+  select(site_no, Hylak_id, Lake_name, site_name) %>%
+  filter(!is.na(Hylak_id))
+
+HydroLAKES_duplicate = GREALM_HydroLAKES_merged %>% 
+  st_drop_geometry() %>%
+  group_by(Hylak_id) %>%
+  mutate(count = n()) %>%
+  filter(count > 1) %>%
+  select(site_no, Hylak_id, Lake_name) %>%
+  left_join(GREALM_data %>% select(site_no, site_name) %>% distinct()) %>%
+  select(site_no, Hylak_id, Lake_name, site_name) %>%
+  filter(!is.na(Hylak_id))
+
+GREALM_na = GREALM_HydroLAKES_merged %>% 
+  st_drop_geometry() %>%
+  select(site_no, Hylak_id, Lake_name) %>%
+  left_join(GREALM_data %>% select(site_no, site_name) %>% distinct()) %>%
+  select(site_no, Hylak_id, Lake_name, site_name) %>%
+  filter(is.na(Hylak_id))
+
+GREALM_manual = rbind(GREALM_duplicate, HydroLAKES_duplicate, GREALM_na) %>% 
+  distinct()
+  
+write.csv(GREALM_manual, "data/GREALM_manual.csv", row.names = FALSE)
+
+GREALM_HydroLAKES_pairing = GREALM_HydroLAKES_merged %>%
+  filter(!site_no %in% GREALM_manual$site_no) %>%
+  filter(site_no %in% combined_anomaly$site_no) %>%
+  select(site_no, Hylak_id) %>%
+  st_drop_geometry()
+
+GREALM_manual_corrected = read.csv("data/GREALM_manual_corrected.csv", colClasses = c("site_no" = "character")) %>%
+  filter(!is.na(Hylak_id)) %>%
+  select(-site_name)
+
+GREALM_HydroLAKES_df = rbind(GREALM_HydroLAKES_pairing, GREALM_manual_corrected) %>%
+  left_join(combined_anomaly) %>%
+  left_join(HydroLAKES_fixed) %>% 
+  mutate(ID = Hylak_id) %>% 
+  st_drop_geometry() %>%
+  select(-geometry) %>%
+  mutate(lat = Pour_lat) %>%
+  mutate(lon = Pour_long) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
   st_join(HydroBASINS_df, join = st_intersects)
 
-df_out = GREALM_HydroLAKES
+df_out = GREALM_HydroLAKES_df
 
 write.csv(df_out %>% st_drop_geometry(), "out/GREALM_anomaly_1993_2020BL.csv", row.names = FALSE)
-write.csv(combined_data, "out/GREALM_timeseries_1993_2020BL.csv", row.names = FALSE)
+write.csv(combined_data %>% 
+            filter(site_no %in% df_out$site_no) %>% 
+            left_join(df_out %>% st_drop_geometry() %>% select(site_no, Hylak_id)), 
+          "out/GREALM_timeseries_1993_2020BL.csv", row.names = FALSE)
